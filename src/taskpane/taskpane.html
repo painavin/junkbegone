@@ -28,16 +28,21 @@
         <h2 class="ms-font-xl" style="margin: 0 0 8px 0;">Junk Be Gone</h2>
         <p class="ms-font-m">Deletes junk mail from senders matching the list below.</p>
 
-        <label for="badwords" class="ms-font-m" style="font-weight: 600; margin-bottom: 4px;">Bad words (one per line, matched against sender name/address):</label>
+        <label for="badwords" class="ms-font-m" style="font-weight: 600; margin-bottom: 4px;">Bad words (one per line, matched against sender name/address; use /pattern/flags for regex):</label>
         <textarea id="badwords" rows="6" style="width: 100%; box-sizing: border-box; color: var(--control-fg, #1b1b1b); background: var(--control-bg, #ffffff); border: 1px solid #8a8886; font-family: inherit; font-size: 14px; padding: 6px;"></textarea>
 
         <button id="save-badwords" style="margin-top: 10px; padding: 8px 16px; background: var(--control-bg, #ffffff); color: var(--accent, #0078d7); border: 1px solid var(--accent, #0078d7); border-radius: 2px; cursor: pointer; font-size: 14px;">
             Save List
         </button>
 
-        <button id="run" style="margin-top: 16px; padding: 10px 20px; background: var(--accent, #0078d7); color: #ffffff; border: none; border-radius: 2px; cursor: pointer; font-size: 16px;">
-            Run Cleanup
-        </button>
+        <div style="display: flex; gap: 10px; margin-top: 16px;">
+            <button id="preview" style="flex: 1; padding: 10px 20px; background: var(--control-bg, #ffffff); color: var(--accent, #0078d7); border: 1px solid var(--accent, #0078d7); border-radius: 2px; cursor: pointer; font-size: 16px;">
+                Preview
+            </button>
+            <button id="run" style="flex: 1; padding: 10px 20px; background: var(--accent, #0078d7); color: #ffffff; border: none; border-radius: 2px; cursor: pointer; font-size: 16px;">
+                Run Cleanup
+            </button>
+        </div>
 
         <pre id="result" class="ms-font-m" style="white-space: pre-wrap; text-align: left; margin-top: 16px; color: var(--fg, #1b1b1b);"></pre>
     </main>

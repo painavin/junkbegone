@@ -25,6 +25,7 @@ Office.onReady((info) => {
     document.getElementById("sideload-msg").style.display = "none";
     document.getElementById("app-body").style.display = "flex";
     document.getElementById("run").onclick = run;
+    document.getElementById("preview").onclick = preview;
     document.getElementById("save-badwords").onclick = saveBadWordsFromTextarea;
     document.getElementById("badwords").value = loadBadWords().join("\n");
 
@@ -89,7 +90,7 @@ async function getAccessToken() {
 async function getJunkMessages(token) {
   const messages = [];
   let url =
-    "https://graph.microsoft.com/v1.0/me/mailFolders/junkemail/messages?$select=id,from&$top=100";
+    "https://graph.microsoft.com/v1.0/me/mailFolders/junkemail/messages?$select=id,subject,from&$top=100";
 
   while (url) {
     const response = await fetch(url, {
@@ -106,11 +107,27 @@ async function getJunkMessages(token) {
   return messages;
 }
 
+const REGEX_LITERAL = /^\/(.*)\/([a-z]*)$/;
+
+function compileBadWord(word) {
+  const literal = word.match(REGEX_LITERAL);
+  if (!literal) return null;
+  try {
+    return new RegExp(literal[1], literal[2]);
+  } catch {
+    return null;
+  }
+}
+
 function senderMatchesBadWord(message, badWords) {
   const from = message.from && message.from.emailAddress;
   if (!from) return false;
-  const haystack = `${from.name || ""} ${from.address || ""}`.toLowerCase();
-  return badWords.some((word) => haystack.includes(word.toLowerCase()));
+  const haystack = `${from.name || ""} ${from.address || ""}`;
+
+  return badWords.some((word) => {
+    const regex = compileBadWord(word);
+    return regex ? regex.test(haystack) : haystack.toLowerCase().includes(word.toLowerCase());
+  });
 }
 
 async function deleteMessage(token, id) {
@@ -120,6 +137,26 @@ async function deleteMessage(token, id) {
   });
   if (!response.ok && response.status !== 404) {
     throw new Error(`Delete failed for ${id}: ${response.status} ${await response.text()}`);
+  }
+}
+
+export async function preview() {
+  const resultEl = document.getElementById("result");
+  resultEl.textContent = "Signing in...";
+
+  try {
+    const token = await getAccessToken();
+    const badWords = loadBadWords();
+
+    resultEl.textContent = "Scanning Junk Email folder...";
+    const messages = await getJunkMessages(token);
+    const matched = messages.filter((m) => senderMatchesBadWord(m, badWords));
+
+    const lines = matched.map((m) => `  ${m.from.emailAddress.name} <${m.from.emailAddress.address}> — ${m.subject}`);
+    resultEl.textContent =
+      `Scanned: ${messages.length} messages. Would match: ${matched.length}.\n` + lines.join("\n");
+  } catch (error) {
+    resultEl.textContent = `Error: ${error.message}`;
   }
 }
 
