@@ -5,6 +5,7 @@
       "label": "Build (Development)",
       "type": "npm",
       "script": "build:dev",
+      "path": "outlook-plugin",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -19,6 +20,7 @@
       "label": "Build (Production)",
       "type": "npm",
       "script": "build",
+      "path": "outlook-plugin",
       "group": "build",
       "presentation": {
         "clear": true,
@@ -38,6 +40,9 @@
         "--app",
         "excel"
       ],
+      "options": {
+        "cwd": "${workspaceFolder}/outlook-plugin"
+      },
       "presentation": {
         "clear": true,
         "panel": "dedicated"
@@ -56,6 +61,9 @@
         "--app",
         "outlook"
       ],
+      "options": {
+        "cwd": "${workspaceFolder}/outlook-plugin"
+      },
       "presentation": {
         "clear": true,
         "panel": "dedicated"
@@ -74,6 +82,9 @@
         "--app",
         "powerpoint"
       ],
+      "options": {
+        "cwd": "${workspaceFolder}/outlook-plugin"
+      },
       "presentation": {
         "clear": true,
         "panel": "dedicated"
@@ -92,6 +103,9 @@
         "--app",
         "word"
       ],
+      "options": {
+        "cwd": "${workspaceFolder}/outlook-plugin"
+      },
       "presentation": {
         "clear": true,
         "panel": "dedicated"
@@ -102,6 +116,7 @@
       "label": "Dev Server",
       "type": "npm",
       "script": "dev-server",
+      "path": "outlook-plugin",
       "presentation": {
         "clear": true,
         "panel": "dedicated"
@@ -112,6 +127,7 @@
       "label": "Install",
       "type": "npm",
       "script": "install",
+      "path": "outlook-plugin",
       "presentation": {
         "clear": true,
         "panel": "shared",
@@ -123,6 +139,7 @@
       "label": "Lint: Check for problems",
       "type": "npm",
       "script": "lint",
+      "path": "outlook-plugin",
       "problemMatcher": [
         "$eslint-stylish"
       ]
@@ -131,6 +148,7 @@
       "label": "Lint: Fix all auto-fixable problems",
       "type": "npm",
       "script": "lint:fix",
+      "path": "outlook-plugin",
       "problemMatcher": [
         "$eslint-stylish"
       ]
@@ -139,6 +157,7 @@
       "label": "Stop Debug",
       "type": "npm",
       "script": "stop",
+      "path": "outlook-plugin",
       "presentation": {
         "clear": true,
         "panel": "shared",
@@ -150,6 +169,7 @@
       "label": "Watch",
       "type": "npm",
       "script": "watch",
+      "path": "outlook-plugin",
       "presentation": {
         "clear": true,
         "panel": "dedicated"
