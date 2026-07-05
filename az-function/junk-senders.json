@@ -1,9 +1,62 @@
 [
-    "/Tax.*Rel/",
-    "/Billing.*Info/",
-    "/Colonial.*Offer/",
+
     "/AARP.*/",
-    "/eharmon.*/",
+    "/Auto.*Pay/",
+    "/Auto.*desk/",
+    "Americor",
+	"/.*Affiliate/",
+    "/.*Associate/",
+
+    "/Billing.*Info/",
+    "Brinks",
+    "BetterHelp",
+    "BarkBox",
+    "Blissy",
+
+    "CarSh",
+    "Colonial",
     "/Credit.*Card.*Ad/",
-    "/House.*Ad/"
+
+	"/Direct.*Med/",
+    "Debt",
+    "/Doc.*Wilson/",
+
+    "/eharmon.*/",
+    "/Endurance.*Partner/",
+
+    "ForkFulMeal",
+
+    "Goldco",
+
+    "/House.*Ad/",
+    "HexClad",
+
+    "HealthCare.com",
+
+    "/.*info/",
+
+    "Jacuzzi",
+
+    "/Liberty.*Mutual/",
+    "Loans",
+    "Life.*Partner",
+
+    "/Miracle.*Partner/",
+
+    "Orange",
+	".online",
+
+    "Roofing",
+
+    "/Tax.*Rel/",
+    "Timeshare",
+
+    "Vivint",
+    "Visible",
+
+    "/U.*S.*A.*Wild/",
+
+    "WarbyParker",
+    "/Warranty.*Servic/",
+    "/Weight.*Loss/"
 ]
