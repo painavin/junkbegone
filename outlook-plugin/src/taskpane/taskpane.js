@@ -43,8 +43,6 @@ function applyOfficeTheme() {
   const root = document.documentElement.style;
   root.setProperty("--bg", theme.bodyBackgroundColor);
   root.setProperty("--fg", theme.bodyForegroundColor);
-  root.setProperty("--control-bg", theme.controlBackgroundColor);
-  root.setProperty("--control-fg", theme.controlForegroundColor);
 }
 
 function loadBadWords() {
