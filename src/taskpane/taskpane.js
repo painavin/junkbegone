@@ -14,7 +14,7 @@ const msalConfig = {
   auth: {
     clientId: "ed7fafe8-a6fc-4ca8-ae75-db77f33f2c5f",
     authority: "https://login.microsoftonline.com/common",
-    redirectUri: window.location.origin + "/taskpane.html",
+    redirectUri: window.location.origin + window.location.pathname,
   },
 };
 
