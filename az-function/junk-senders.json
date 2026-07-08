@@ -4,7 +4,7 @@
     "/Auto.*Pay/",
     "/Auto.*desk/",
     "Americor",
-	"/.*Affiliate/",
+    "/.*Affiliate/",
     "/.*Associate/",
 
     "/Billing.*Info/",
@@ -17,7 +17,7 @@
     "Colonial",
     "/Credit.*Card.*Ad/",
 
-	"/Direct.*Med/",
+    "/Direct.*Med/",
     "Debt",
     "/Doc.*Wilson/",
 
@@ -44,7 +44,7 @@
     "/Miracle.*Partner/",
 
     "Orange",
-	".online",
+    ".online",
 
     "Roofing",
 
