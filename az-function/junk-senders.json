@@ -7,24 +7,29 @@
     "/.*Affiliate/",
     "/.*Associate/",
     "Affordable",
+    "AccuQuote",
+    "Advertisement",
+    "/Ad.*Partner/",
 
     "/Billing.*Info/",
     "Brinks",
     "BetterHelp",
     "BarkBox",
     "Blissy",
+    "/Buys.*Houses/",
 
     "CarSh",
     "Canvas",
     "Colonial",
-    "/Credit.*Card.*Ad/",
+    "/Credit.*Card/",
+    "/Car.*Insurance/",
 
     "/Direct.*Med/",
     "Debt",
     "/Doc.*Wilson/",
 
     "/eharmon.*/",
-    "/Endurance.*Partner/",
+    "Endurance",
 
     "ForkFulMeal",
 
@@ -37,29 +42,46 @@
     "/Home.*Ad/",
 
     "/.*info/",
+    "/Insurance.*Save/",
 
     "Jacuzzi",
 
+    "Keranique",
+
     "/Liberty.*Mutual/",
     "Loans",
-    "Life.*Partner",
+    "/Life.*Partner/",
+    "Lawn",
+    "Lending",
+    "Laser",
+    "Lawsuit",
 
     "/Miracle.*Partner/",
+    "Mortgage",
 
     "Orange",
     ".online",
 
+    "/Photo.*Stick/",
+
     "Roofing",
+
+    "Soundbright",
+    "SBLI",
 
     "/Tax.*Rel/",
     "Timeshare",
 
     "Vivint",
     "Visible",
+    "/Vision.*Plan/",
 
     "/U.*S.*A.*Wild/",
 
     "WarbyParker",
     "/Warranty.*Servic/",
-    "/Weight.*Loss/"
+    "/Weight.*Loss/",
+    "Warranty",
+
+    "Zoomcar"
 ]
