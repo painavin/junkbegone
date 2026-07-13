@@ -23,6 +23,7 @@
     "Colonial",
     "/Credit.*Card/",
     "/Car.*Insurance/",
+    "/Capital.*Wallet/",
 
     "/Direct.*Med/",
     "Debt",
