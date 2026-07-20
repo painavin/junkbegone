@@ -4,12 +4,14 @@
     "/Auto.*Pay/",
     "/Auto.*desk/",
     "Americor",
+    "AmeriSave",
     "/.*Affiliate/",
     "/.*Associate/",
     "Affordable",
     "AccuQuote",
     "Advertisement",
     "/Ad.*Partner/",
+    "/Ace.*Hardware/",
 
     "/Billing.*Info/",
     "Brinks",
@@ -17,6 +19,7 @@
     "BarkBox",
     "Blissy",
     "/Buys.*Houses/",
+    "/Bath.*Wrap/",
 
     "CarSh",
     "Canvas",
@@ -24,51 +27,89 @@
     "/Credit.*Card/",
     "/Car.*Insurance/",
     "/Capital.*Wallet/",
+    "/Car.*Shield/",
+    "Cashback",
+    "/Cloud.*Stor/i",
 
     "/Direct.*Med/",
     "Debt",
     "/Doc.*Wilson/",
+    "Deals",
+    "/Drink.*Tinto/",
+    "/Destin.*Card/",
 
     "/eharmon.*/",
     "Endurance",
+    "/Exit.*Time/",
+    "/Eyecare.*Muk/",
 
     "ForkFulMeal",
+    "Fahw",
+    "/Financial.*Help/",
+    "/Fresh.*Review/",
 
     "Goldco",
+    "/Safe.*Street/",
 
     "/House.*Ad/",
+    "/House.*Partner/",
     "HexClad",
+    "/Hearing.*Aid/",
+    "/Haley.*Ste/",
+    "/Health.*Ne/",
 
     "HealthCare.com",
     "/Home.*Ad/",
 
     "/.*info/",
     "/Insurance.*Save/",
+    "/i.*Cloud/i",
 
     "Jacuzzi",
+    "/Jenn.*Disco/",
+    "/Jenn.*Part/",
 
     "Keranique",
 
     "/Liberty.*Mutual/",
-    "Loans",
+    "Loan",
     "/Life.*Partner/",
+    "/Life.*Line/",
     "Lawn",
     "Lending",
     "Laser",
     "Lawsuit",
+    "/Law.*Info/",
+    "/Ladder.*Life/",
+    "/Line.*Caught/",
 
     "/Miracle.*Partner/",
+    "/Miracle.*Team/",
     "Mortgage",
+    "Mastercard",
+    "/Miracle.*Sheet/",
+
+    "NDR",
 
     "Orange",
     ".online",
 
     "/Photo.*Stick/",
+    "/Prostat.*Health/i",
+    "Pillow",
+    "/Prime.*Member/",
 
     "Roofing",
+    "Rugiet",
+    "/Rita.*Comf/",
+    "/Roof.*Rep/",
 
     "Soundbright",
     "SBLI",
+    "/The.*Shield/i",
+    "Saatva",
+    "/Shop.*Miracle/",
+    "Sirius",
 
     "/Tax.*Rel/",
     "Timeshare",
@@ -76,13 +117,15 @@
     "Vivint",
     "Visible",
     "/Vision.*Plan/",
+    "/Vehicle.*Ad/",
 
-    "/U.*S.*A.*Wild/",
+    "/U.*S.*A.*Wild/i",
 
     "WarbyParker",
     "/Warranty.*Servic/",
     "/Weight.*Loss/",
     "Warranty",
+    "/Window.*Nation/",
 
     "Zoomcar"
 ]
