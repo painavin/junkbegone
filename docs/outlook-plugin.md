@@ -92,6 +92,19 @@ is called twice with different scopes:
 | Microsoft Graph | `Mail.ReadWrite`, `User.Read` | reading and deleting junk mail |
 | Azure Storage | `https://storage.azure.com/user_impersonation` | reading and writing the list blob |
 
+The two use **different authorities**, which matters:
+
+- Graph uses `/common`, so the personal Microsoft account mailbox can sign in.
+- Storage uses the tenant explicitly (`https://login.microsoftonline.com/<tenant-id>`), because Azure
+  Storage rejects personal accounts. Via `/common` an MSA resolves to its consumer home tenant, which
+  owns no Azure resources, and sign-in fails with *"You can't sign in here with a personal account.
+  Use your work or school account instead."* The mailbox exists as a guest in the tenant owning the
+  storage account, and that guest holds the RBAC role, so the token must be requested from that
+  tenant.
+
+Because the two authorities produce two MSAL account entries in different tenants, `pickAccount()`
+selects by `tenantId` rather than taking `getAllAccounts()[0]`.
+
 `acquireToken` tries `acquireTokenSilent` for a cached account, then falls back to
 `acquireTokenPopup` (or `loginPopup` when there is no account yet) — unless called with
 `{ interactive: false }`, in which case it returns `null` rather than opening a popup.
@@ -111,6 +124,35 @@ there is no backend and no embedded SAS token or account key. That requires all 
    (`e406a681-f3d4-42a8-90b6-c2b029497af1`), granted on the app registration and consented.
 2. **RBAC** — the signing-in user holds **Storage Blob Data Contributor** on the `junkbegone`
    container. Subscription Owner is *not* sufficient; this is a data-plane role.
+
+   ```
+   az role assignment create --assignee-object-id <your-object-id> --assignee-principal-type User \
+     --role "Storage Blob Data Contributor" \
+     --scope "/subscriptions/<sub>/resourceGroups/rg-sub-free/providers/Microsoft.Storage/storageAccounts/satickers/blobServices/default/containers/junkbegone"
+   ```
+
+   Get the object id with `az ad signed-in-user show --query id -o tsv`. Pass it via
+   `--assignee-object-id`, not `--assignee <email>` — for a personal Microsoft account signed in as a
+   guest, the directory UPN is `navin.pai_outlook.com#EXT#@navinpai.onmicrosoft.com`, so lookup by
+   email address fails.
+
+   **Get the scope exactly right.** Container-scoped assignments are *not* validated against the
+   parent resource group, so a scope naming a nonexistent resource group is accepted and returns
+   clean JSON while granting nothing. The only symptom is `403
+   AuthorizationPermissionMismatch` on every data-plane call, which looks identical to a propagation
+   delay or an unsupported-identity problem. Verify with:
+
+   ```
+   az storage blob download --account-name satickers --container-name junkbegone \
+     --name junk-senders.json --file ./rbac-test.json --auth-mode login
+   ```
+
+   That exercises the same principal and role as the add-in, so it isolates RBAC from anything
+   browser-, CORS-, or MSAL-related.
+
+   For the record: a personal Microsoft account signed in as a B2B guest **does** work for Storage
+   data-plane RBAC. The guest object in the resource tenant is a normal Entra principal and can hold
+   the role.
 3. **CORS** on the storage account's Blob service, allowing both add-in origins:
 
    ```

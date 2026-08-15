@@ -11,7 +11,7 @@ Source lives in [`az-function/`](../az-function).
 | Thing | Value |
 | --- | --- |
 | Function app | `junkbegone` (Flex Consumption) |
-| Resource group | `rg-trading` |
+| Resource group | `rg-sub-free` |
 | Storage account | `satickers` |
 | Blob container | `junkbegone` |
 | App registration | `ed7fafe8-a6fc-4ca8-ae75-db77f33f2c5f` (shared with the add-in) |
@@ -164,8 +164,8 @@ func azure functionapp publish junkbegone
 ## Triggering manually
 
 ```
-HOST=$(az functionapp show --name junkbegone --resource-group rg-trading --query defaultHostName -o tsv)
-MASTER_KEY=$(az functionapp keys list --name junkbegone --resource-group rg-trading --query masterKey -o tsv)
+HOST=$(az functionapp show --name junkbegone --resource-group rg-sub-free --query defaultHostName -o tsv)
+MASTER_KEY=$(az functionapp keys list --name junkbegone --resource-group rg-sub-free --query masterKey -o tsv)
 curl -X POST "https://$HOST/admin/functions/dailyCleanup?code=$MASTER_KEY" \
   -H "Content-Type: application/json" -d '{"input": ""}'
 ```
@@ -176,7 +176,7 @@ match without deleting anything, use **Preview** in the add-in.
 ## Logs
 
 ```
-az webapp log tail --name junkbegone --resource-group rg-trading
+az webapp log tail --name junkbegone --resource-group rg-sub-free
 ```
 
 Or the **Log stream** blade in the portal. Application Insights is enabled with sampling, excluding

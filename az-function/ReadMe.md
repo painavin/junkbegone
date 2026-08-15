@@ -12,12 +12,12 @@ func azure functionapp publish junkbegone
 The Flex Consumption app's hostname includes a random suffix, so look it up dynamically rather than hardcoding it, along with the site's master key:
 
 ```
-HOST=$(az functionapp show --name junkbegone --resource-group rg-trading --query defaultHostName -o tsv)
-MASTER_KEY=$(az functionapp keys list --name junkbegone --resource-group rg-trading --query masterKey -o tsv)
+HOST=$(az functionapp show --name junkbegone --resource-group rg-sub-free --query defaultHostName -o tsv)
+MASTER_KEY=$(az functionapp keys list --name junkbegone --resource-group rg-sub-free --query masterKey -o tsv)
 curl -X POST "https://$HOST/admin/functions/dailyCleanup?code=$MASTER_KEY" -H "Content-Type: application/json" -d '{"input": ""}'
 ```
 
-Check the results in the portal's **Log stream**, or via `az webapp log tail --name junkbegone --resource-group rg-trading`.
+Check the results in the portal's **Log stream**, or via `az webapp log tail --name junkbegone --resource-group rg-sub-free`.
 
 ## Download `junk-senders.json`
 
