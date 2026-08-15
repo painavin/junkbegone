@@ -86,7 +86,7 @@ function showBadWords(words) {
 
 // Returns the stored list, or null when interactive sign-in was declined/skipped.
 async function loadBadWords({ interactive = true } = {}) {
-  const token = await acquireToken(STORAGE_SCOPES, { interactive });
+  const token = await getStorageToken({ interactive });
   if (!token) return null;
 
   const response = await fetch(SENDERS_BLOB_URL, {
@@ -124,7 +124,7 @@ async function saveBadWordsFromTextarea() {
   resultEl.textContent = "Saving list...";
 
   try {
-    const token = await acquireToken(STORAGE_SCOPES);
+    const token = await getStorageToken();
     const headers = {
       Authorization: `Bearer ${token}`,
       "x-ms-version": BLOB_API_VERSION,
@@ -156,28 +156,55 @@ async function saveBadWordsFromTextarea() {
   }
 }
 
-async function acquireToken(scopes, { interactive = true } = {}) {
+// Azure Storage rejects personal Microsoft accounts, so the storage token cannot be
+// requested via /common the way the Graph token is: /common resolves an MSA mailbox to
+// its consumer home tenant, which owns no Azure resources. This mailbox exists as a
+// guest in the tenant below, and that guest holds the Storage Blob Data Contributor
+// role, so the token has to be requested from that tenant explicitly.
+const STORAGE_TENANT_ID = "b83d5710-7367-4851-9bcc-f343b8203d15";
+const STORAGE_AUTHORITY = `https://login.microsoftonline.com/${STORAGE_TENANT_ID}`;
+
+// Graph and Storage sign-ins produce separate account entries (different tenants), so
+// pick the one matching the authority being used rather than always the first.
+function pickAccount(tenantId) {
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length === 0) return null;
+  if (!tenantId) return accounts[0];
+  return accounts.find((a) => a.tenantId === tenantId) || accounts[0];
+}
+
+async function acquireToken(scopes, { interactive = true, authority, tenantId } = {}) {
   await msalInstance.initialize();
 
-  const accounts = msalInstance.getAllAccounts();
-  if (accounts.length > 0) {
+  const request = authority ? { scopes, authority } : { scopes };
+  const account = pickAccount(tenantId);
+
+  if (account) {
     try {
-      const result = await msalInstance.acquireTokenSilent({ scopes, account: accounts[0] });
+      const result = await msalInstance.acquireTokenSilent({ ...request, account });
       return result.accessToken;
     } catch {
       if (!interactive) return null;
-      const result = await msalInstance.acquireTokenPopup({ scopes, account: accounts[0] });
+      const result = await msalInstance.acquireTokenPopup({ ...request, account });
       return result.accessToken;
     }
   }
 
   if (!interactive) return null;
-  const result = await msalInstance.loginPopup({ scopes });
+  const result = await msalInstance.loginPopup(request);
   return result.accessToken;
 }
 
 function getAccessToken() {
   return acquireToken(GRAPH_SCOPES);
+}
+
+function getStorageToken({ interactive = true } = {}) {
+  return acquireToken(STORAGE_SCOPES, {
+    interactive,
+    authority: STORAGE_AUTHORITY,
+    tenantId: STORAGE_TENANT_ID,
+  });
 }
 
 async function getJunkMessages(token) {
@@ -263,6 +290,8 @@ export async function preview() {
 
   try {
     const token = await getAccessToken();
+
+    resultEl.textContent = "Loading bad-word list...";
     const badWords = await loadBadWords();
     if (!badWordsLoaded) showBadWords(badWords);
 
@@ -284,6 +313,8 @@ export async function run() {
 
   try {
     const token = await getAccessToken();
+
+    resultEl.textContent = "Loading bad-word list...";
     const badWords = await loadBadWords();
     if (!badWordsLoaded) showBadWords(badWords);
 
