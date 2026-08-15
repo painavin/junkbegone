@@ -15,11 +15,13 @@
 
     "/Billing.*Info/",
     "Brinks",
-    "BetterHelp",
+    "Better",
     "BarkBox",
     "Blissy",
     "/Buys.*Houses/",
     "/Bath.*Wrap/",
+    "Blizz",
+    "/Best.*Buy/",
 
     "CarSh",
     "Canvas",
@@ -30,6 +32,9 @@
     "/Car.*Shield/",
     "Cashback",
     "/Cloud.*Stor/i",
+    "/Customer.*Experience/",
+    "Cheec",
+    "/Clear.*Choice/",
 
     "/Direct.*Med/",
     "Debt",
@@ -49,7 +54,7 @@
     "/Fresh.*Review/",
 
     "Goldco",
-    "/Safe.*Street/",
+    "Glucose",
 
     "/House.*Ad/",
     "/House.*Partner/",
@@ -57,13 +62,14 @@
     "/Hearing.*Aid/",
     "/Haley.*Ste/",
     "/Health.*Ne/",
-
-    "HealthCare.com",
+    "HealthCare",
     "/Home.*Ad/",
+    "/Home.*Shield/",
 
     "/.*info/",
     "/Insurance.*Save/",
     "/i.*Cloud/i",
+    "Implant",
 
     "Jacuzzi",
     "/Jenn.*Disco/",
@@ -82,12 +88,14 @@
     "/Law.*Info/",
     "/Ladder.*Life/",
     "/Line.*Caught/",
+    "Lulu",
 
     "/Miracle.*Partner/",
     "/Miracle.*Team/",
     "Mortgage",
     "Mastercard",
     "/Miracle.*Sheet/",
+    "/Male.*Perf/",
 
     "NDR",
 
@@ -98,11 +106,14 @@
     "/Prostat.*Health/i",
     "Pillow",
     "/Prime.*Member/",
+    "Portable",
+    "Pain",
 
     "Roofing",
     "Rugiet",
     "/Rita.*Comf/",
     "/Roof.*Rep/",
+    "/Relief.*M/",
 
     "Soundbright",
     "SBLI",
@@ -110,14 +121,18 @@
     "Saatva",
     "/Shop.*Miracle/",
     "Sirius",
+    "/Safe.*Street/",
 
     "/Tax.*Rel/",
     "Timeshare",
+    "/Travel.*Ready/",
 
     "Vivint",
     "Visible",
     "/Vision.*Plan/",
     "/Vehicle.*Ad/",
+    "Vitali",
+    "Veteran",
 
     "/U.*S.*A.*Wild/i",
 
