@@ -7,8 +7,26 @@
 
 import { PublicClientApplication } from "@azure/msal-browser";
 
+// Only used when the blob does not exist yet.
 const DEFAULT_BAD_WORDS = ["AARP", "AccuQuote", "Affordable"];
-const ROAMING_SETTINGS_KEY = "junker.badWords";
+
+// The bad-word list lives in the blob the timer-triggered function reads, so the
+// add-in and the scheduled cleanup always act on the same list.
+const STORAGE_ACCOUNT = "satickers";
+const BLOB_CONTAINER = "junkbegone";
+const SENDERS_BLOB = "junk-senders.json";
+const SENDERS_BLOB_URL = `https://${STORAGE_ACCOUNT}.blob.core.windows.net/${BLOB_CONTAINER}/${SENDERS_BLOB}`;
+const BLOB_API_VERSION = "2021-08-06";
+
+// AAD issues one token per resource, so Graph and Storage need separate requests.
+const GRAPH_SCOPES = ["Mail.ReadWrite", "User.Read"];
+const STORAGE_SCOPES = ["https://storage.azure.com/user_impersonation"];
+
+// ETag of the list as we last read it, used to detect a competing write on save.
+let sendersETag = null;
+// Whether the textarea reflects the stored list. Saving before it does would
+// overwrite the real list with whatever placeholder text is on screen.
+let badWordsLoaded = false;
 
 const msalConfig = {
   auth: {
@@ -27,7 +45,7 @@ Office.onReady((info) => {
     document.getElementById("run").onclick = run;
     document.getElementById("preview").onclick = preview;
     document.getElementById("save-badwords").onclick = saveBadWordsFromTextarea;
-    document.getElementById("badwords").value = loadBadWords().join("\n");
+    populateBadWords();
 
     applyOfficeTheme();
     if (Office.context.officeTheme) {
@@ -35,6 +53,22 @@ Office.onReady((info) => {
     }
   }
 });
+
+// Runs without a user gesture, so a sign-in popup here would be blocked — only a
+// cached token can be used. Preview, Run Cleanup and Save List sign in interactively.
+async function populateBadWords() {
+  const resultEl = document.getElementById("result");
+  try {
+    const words = await loadBadWords({ interactive: false });
+    if (!words) {
+      resultEl.textContent = "Sign in with Preview or Run Cleanup to load the saved list.";
+      return;
+    }
+    showBadWords(words);
+  } catch (error) {
+    resultEl.textContent = `Could not load the saved list: ${error.message}`;
+  }
+}
 
 function applyOfficeTheme() {
   const theme = Office.context.officeTheme;
@@ -45,31 +79,85 @@ function applyOfficeTheme() {
   root.setProperty("--fg", theme.bodyForegroundColor);
 }
 
-function loadBadWords() {
-  const stored = Office.context.roamingSettings.get(ROAMING_SETTINGS_KEY);
-  return stored && stored.length ? stored : DEFAULT_BAD_WORDS;
+function showBadWords(words) {
+  document.getElementById("badwords").value = words.join("\n");
+  badWordsLoaded = true;
 }
 
-function saveBadWordsFromTextarea() {
+// Returns the stored list, or null when interactive sign-in was declined/skipped.
+async function loadBadWords({ interactive = true } = {}) {
+  const token = await acquireToken(STORAGE_SCOPES, { interactive });
+  if (!token) return null;
+
+  const response = await fetch(SENDERS_BLOB_URL, {
+    headers: { Authorization: `Bearer ${token}`, "x-ms-version": BLOB_API_VERSION },
+  });
+
+  if (response.status === 404) {
+    sendersETag = null;
+    return DEFAULT_BAD_WORDS;
+  }
+  if (!response.ok) {
+    throw new Error(`Reading ${SENDERS_BLOB} failed: ${response.status} ${await response.text()}`);
+  }
+
+  sendersETag = response.headers.get("ETag");
+  const words = JSON.parse(await response.text());
+  return Array.isArray(words) ? words : DEFAULT_BAD_WORDS;
+}
+
+async function saveBadWordsFromTextarea() {
+  const resultEl = document.getElementById("result");
+
+  if (!badWordsLoaded) {
+    resultEl.textContent =
+      "The saved list has not loaded yet — saving now would overwrite it. Run Preview first, then save.";
+    return;
+  }
+
   const words = document
     .getElementById("badwords")
     .value.split("\n")
     .map((w) => w.trim())
     .filter((w) => w.length > 0);
 
-  Office.context.roamingSettings.set(ROAMING_SETTINGS_KEY, words);
-  Office.context.roamingSettings.saveAsync((result) => {
-    const resultEl = document.getElementById("result");
-    resultEl.textContent =
-      result.status === Office.AsyncResultStatus.Succeeded
-        ? `Saved ${words.length} bad word(s).`
-        : `Failed to save: ${result.error.message}`;
-  });
+  resultEl.textContent = "Saving list...";
+
+  try {
+    const token = await acquireToken(STORAGE_SCOPES);
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      "x-ms-version": BLOB_API_VERSION,
+      "x-ms-blob-type": "BlockBlob",
+      "Content-Type": "application/json",
+    };
+    // Fail rather than silently clobber a list edited elsewhere since we read it.
+    if (sendersETag) headers["If-Match"] = sendersETag;
+
+    const response = await fetch(SENDERS_BLOB_URL, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(words, null, 2),
+    });
+
+    if (response.status === 412) {
+      resultEl.textContent =
+        "The saved list changed elsewhere. Reopen the task pane to reload it, then re-apply your edits.";
+      return;
+    }
+    if (!response.ok) {
+      throw new Error(`${response.status} ${await response.text()}`);
+    }
+
+    sendersETag = response.headers.get("ETag");
+    resultEl.textContent = `Saved ${words.length} bad word(s). The scheduled cleanup will use this list too.`;
+  } catch (error) {
+    resultEl.textContent = `Failed to save: ${error.message}`;
+  }
 }
 
-async function getAccessToken() {
+async function acquireToken(scopes, { interactive = true } = {}) {
   await msalInstance.initialize();
-  const scopes = ["Mail.ReadWrite", "User.Read"];
 
   const accounts = msalInstance.getAllAccounts();
   if (accounts.length > 0) {
@@ -77,18 +165,25 @@ async function getAccessToken() {
       const result = await msalInstance.acquireTokenSilent({ scopes, account: accounts[0] });
       return result.accessToken;
     } catch {
-      // fall through to interactive login
+      if (!interactive) return null;
+      const result = await msalInstance.acquireTokenPopup({ scopes, account: accounts[0] });
+      return result.accessToken;
     }
   }
 
+  if (!interactive) return null;
   const result = await msalInstance.loginPopup({ scopes });
   return result.accessToken;
+}
+
+function getAccessToken() {
+  return acquireToken(GRAPH_SCOPES);
 }
 
 async function getJunkMessages(token) {
   const messages = [];
   let url =
-    "https://graph.microsoft.com/v1.0/me/mailFolders/junkemail/messages?$select=id,subject,from&$top=100";
+    "https://graph.microsoft.com/v1.0/me/mailFolders/junkemail/messages?$select=id,subject,from,flag&$top=100";
 
   while (url) {
     const response = await fetch(url, {
@@ -128,6 +223,30 @@ function senderMatchesBadWord(message, badWords) {
   });
 }
 
+// A follow-up flag on junk mail is treated as a manual "delete this" marker.
+// Only an active flag counts; "complete" means the flag was already ticked off.
+function isFlagged(message) {
+  return !!message.flag && message.flag.flagStatus === "flagged";
+}
+
+function shouldDelete(message, badWords) {
+  return senderMatchesBadWord(message, badWords) || isFlagged(message);
+}
+
+function matchReason(message, badWords) {
+  const reasons = [];
+  if (senderMatchesBadWord(message, badWords)) reasons.push("bad word");
+  if (isFlagged(message)) reasons.push("flagged");
+  return reasons.join(" + ");
+}
+
+// Flagged messages match regardless of sender, so `from` may be absent here.
+function describeSender(message) {
+  const from = message.from && message.from.emailAddress;
+  if (!from) return "(no sender)";
+  return `${from.name || ""} <${from.address || ""}>`;
+}
+
 async function deleteMessage(token, id) {
   const response = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${id}`, {
     method: "DELETE",
@@ -144,13 +263,14 @@ export async function preview() {
 
   try {
     const token = await getAccessToken();
-    const badWords = loadBadWords();
+    const badWords = await loadBadWords();
+    if (!badWordsLoaded) showBadWords(badWords);
 
     resultEl.textContent = "Scanning Junk Email folder...";
     const messages = await getJunkMessages(token);
-    const matched = messages.filter((m) => senderMatchesBadWord(m, badWords));
+    const matched = messages.filter((m) => shouldDelete(m, badWords));
 
-    const lines = matched.map((m) => `  ${m.from.emailAddress.name} <${m.from.emailAddress.address}> — ${m.subject}`);
+    const lines = matched.map((m) => `  [${matchReason(m, badWords)}] ${describeSender(m)} — ${m.subject}`);
     resultEl.textContent =
       `Scanned: ${messages.length} messages. Would match: ${matched.length}.\n` + lines.join("\n");
   } catch (error) {
@@ -164,11 +284,12 @@ export async function run() {
 
   try {
     const token = await getAccessToken();
-    const badWords = loadBadWords();
+    const badWords = await loadBadWords();
+    if (!badWordsLoaded) showBadWords(badWords);
 
     resultEl.textContent = "Scanning Junk Email folder...";
     const messages = await getJunkMessages(token);
-    const toDelete = messages.filter((m) => senderMatchesBadWord(m, badWords));
+    const toDelete = messages.filter((m) => shouldDelete(m, badWords));
 
     let deleteCount = 0;
     for (const message of toDelete) {

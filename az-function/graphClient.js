@@ -78,7 +78,7 @@ async function getAccessToken(pca) {
 async function getJunkMessages(token) {
   const messages = [];
   let url =
-    "https://graph.microsoft.com/v1.0/me/mailFolders/junkemail/messages?$select=id,subject,from&$top=100";
+    "https://graph.microsoft.com/v1.0/me/mailFolders/junkemail/messages?$select=id,subject,from,flag&$top=100";
 
   while (url) {
     const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
@@ -116,6 +116,16 @@ function senderMatches(message, senders) {
   });
 }
 
+// A follow-up flag on junk mail is treated as a manual "delete this" marker.
+// Only an active flag counts; "complete" means the flag was already ticked off.
+function isFlagged(message) {
+  return !!message.flag && message.flag.flagStatus === "flagged";
+}
+
+function shouldDelete(message, senders) {
+  return senderMatches(message, senders) || isFlagged(message);
+}
+
 async function deleteMessage(token, id) {
   const response = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${id}`, {
     method: "DELETE",
@@ -134,7 +144,8 @@ async function runCleanup() {
   const senders = await getConservativeSenders(containerClient);
 
   const messages = await getJunkMessages(token);
-  const toDelete = messages.filter((m) => senderMatches(m, senders));
+  const toDelete = messages.filter((m) => shouldDelete(m, senders));
+  const flagged = toDelete.filter(isFlagged).length;
 
   let deleteCount = 0;
   for (const message of toDelete) {
@@ -142,7 +153,7 @@ async function runCleanup() {
     deleteCount++;
   }
 
-  return { scanned: messages.length, matched: toDelete.length, deleted: deleteCount };
+  return { scanned: messages.length, matched: toDelete.length, flagged, deleted: deleteCount };
 }
 
 module.exports = { createPca, getContainerClient, getConservativeSenders, runCleanup, CONTAINER_NAME, TOKEN_CACHE_BLOB, SENDERS_BLOB };
