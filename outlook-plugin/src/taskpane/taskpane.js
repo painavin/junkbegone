@@ -45,6 +45,7 @@ Office.onReady((info) => {
     document.getElementById("run").onclick = run;
     document.getElementById("preview").onclick = preview;
     document.getElementById("save-badwords").onclick = saveBadWordsFromTextarea;
+    document.getElementById("signin").onclick = signIn;
     populateBadWords();
 
     applyOfficeTheme();
@@ -55,18 +56,61 @@ Office.onReady((info) => {
 });
 
 // Runs without a user gesture, so a sign-in popup here would be blocked — only a
-// cached token can be used. Preview, Run Cleanup and Save List sign in interactively.
+// cached token can be used. Falling back to the Sign in button, which has one.
 async function populateBadWords() {
   const resultEl = document.getElementById("result");
   try {
     const words = await loadBadWords({ interactive: false });
     if (!words) {
-      resultEl.textContent = "Sign in with Preview or Run Cleanup to load the saved list.";
+      showSignInPrompt();
       return;
     }
     showBadWords(words);
+    showSignedInAs();
   } catch (error) {
     resultEl.textContent = `Could not load the saved list: ${error.message}`;
+  }
+}
+
+function showSignInPrompt() {
+  document.getElementById("signin").style.display = "block";
+  document.getElementById("account").style.display = "none";
+  document.getElementById("result").textContent = "Sign in to load the bad-word list.";
+}
+
+// Which identity is signed in is worth surfacing: the mailbox is a personal account
+// while the blob is reached through a guest identity in another tenant.
+function showSignedInAs() {
+  const account = pickAccount();
+  document.getElementById("signin").style.display = "none";
+  const accountEl = document.getElementById("account");
+  if (!account) {
+    accountEl.style.display = "none";
+    return;
+  }
+  accountEl.textContent = `Signed in as ${account.username}`;
+  accountEl.style.display = "block";
+}
+
+// Called from a click, so interactive sign-in is allowed here. Acquires both tokens
+// up front — Graph and Storage use different authorities and consent separately, so
+// getting them together keeps the popups in one place instead of surprising you later.
+async function signIn() {
+  const resultEl = document.getElementById("result");
+  const button = document.getElementById("signin");
+  button.disabled = true;
+  resultEl.textContent = "Signing in...";
+
+  try {
+    await getAccessToken();
+    const words = await loadBadWords();
+    showBadWords(words);
+    showSignedInAs();
+    resultEl.textContent = `Loaded ${words.length} bad word(s).`;
+  } catch (error) {
+    resultEl.textContent = `Sign-in failed: ${error.message}`;
+  } finally {
+    button.disabled = false;
   }
 }
 
@@ -111,7 +155,7 @@ async function saveBadWordsFromTextarea() {
 
   if (!badWordsLoaded) {
     resultEl.textContent =
-      "The saved list has not loaded yet — saving now would overwrite it. Run Preview first, then save.";
+      "The saved list has not loaded yet — saving now would overwrite it. Sign in first, then save.";
     return;
   }
 
@@ -294,6 +338,7 @@ export async function preview() {
     resultEl.textContent = "Loading bad-word list...";
     const badWords = await loadBadWords();
     if (!badWordsLoaded) showBadWords(badWords);
+    showSignedInAs();
 
     resultEl.textContent = "Scanning Junk Email folder...";
     const messages = await getJunkMessages(token);
@@ -317,6 +362,7 @@ export async function run() {
     resultEl.textContent = "Loading bad-word list...";
     const badWords = await loadBadWords();
     if (!badWordsLoaded) showBadWords(badWords);
+    showSignedInAs();
 
     resultEl.textContent = "Scanning Junk Email folder...";
     const messages = await getJunkMessages(token);

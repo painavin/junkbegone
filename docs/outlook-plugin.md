@@ -7,10 +7,12 @@ Source lives in [`outlook-plugin/`](../outlook-plugin).
 
 ## What it does
 
-The add-in shows a task pane with an editable bad-word list and two buttons:
+The add-in shows a task pane with an editable bad-word list and these buttons:
 
 | Button | Behaviour |
 | --- | --- |
+| **Sign in** | Signs in and loads the list. Only shown when there's no cached account. |
+| **Save List** | Writes the list back to the shared blob. |
 | **Preview** | Scans Junk Email and lists what *would* be deleted, with the reason for each match. Deletes nothing. |
 | **Run Cleanup** | Scans Junk Email and permanently deletes every matching message. |
 
@@ -60,10 +62,21 @@ git-diffable editing, but it is only a copy — the blob is what both components
 ### Loading and the sign-in constraint
 
 `Office.onReady` fires without a user gesture, so a sign-in popup there would be blocked by the
-browser. `populateBadWords()` therefore requests a **silent-only** token: if one is cached the
-textarea is filled from the blob, otherwise the pane shows *"Sign in with Preview or Run Cleanup to
-load the saved list."* Preview and Run Cleanup run from a real click, so they may sign in
-interactively, and they fill the textarea if it hasn't loaded yet.
+browser. `populateBadWords()` therefore requests a **silent-only** token, which gives two paths:
+
+- **Cached account** — the list loads immediately, the pane shows *"Signed in as …"*, and the
+  **Sign in** button stays hidden.
+- **No cached account** — the **Sign in** button appears. It runs from a click, so it may sign in
+  interactively. It acquires the Graph *and* Storage tokens together and then loads the list.
+
+Acquiring both tokens in `signIn()` is deliberate: Graph and Storage use different authorities and
+consent separately, so the first sign-in can produce two popups back to back. Doing it in one place
+keeps that burst at the moment you asked to sign in, instead of a second popup appearing later when
+you click Preview. Preview and Run Cleanup can still sign in on their own if you skip the button.
+
+The signed-in account is displayed because two identities are in play here — the mailbox is a personal
+Microsoft account, while the blob is reached through that account's guest identity in another tenant —
+so "which account am I?" is a real question when something fails.
 
 ### Guards against losing the list
 
@@ -71,7 +84,7 @@ Two failure modes are handled explicitly, because both silently destroy the list
 
 - **Saving before loading.** If the blob hasn't loaded, the textarea holds placeholder text rather
   than the real list, so saving would overwrite it. `saveBadWordsFromTextarea()` refuses, and says to
-  run Preview first. `badWordsLoaded` tracks this.
+  sign in first. `badWordsLoaded` tracks this.
 - **Concurrent edits.** The `ETag` from the read is sent back as `If-Match` on the write, so a list
   changed elsewhere since it was read produces a `412` instead of a silent clobber. The pane then
   asks you to reload and re-apply. `sendersETag` tracks this.
