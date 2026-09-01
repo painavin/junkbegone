@@ -318,13 +318,34 @@ function describeSender(message) {
   return `${from.name || ""} <${from.address || ""}>`;
 }
 
-async function deleteMessage(token, id) {
-  const response = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${id}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
+// Mark read, then move to Deleted Items instead of deleting outright, so a false
+// positive stays recoverable. The move has to come second: it returns the message
+// under a new id, which would make a subsequent PATCH target a stale one.
+//
+// 404 is tolerated on both calls — the message already being gone is the desired
+// end state.
+async function moveToDeletedItems(token, id) {
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+
+  const markRead = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${id}`, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify({ isRead: true }),
   });
-  if (!response.ok && response.status !== 404) {
-    throw new Error(`Delete failed for ${id}: ${response.status} ${await response.text()}`);
+  if (!markRead.ok && markRead.status !== 404) {
+    throw new Error(`Marking ${id} read failed: ${markRead.status} ${await markRead.text()}`);
+  }
+
+  const move = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${id}/move`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ destinationId: "deleteditems" }),
+  });
+  if (!move.ok && move.status !== 404) {
+    throw new Error(`Moving ${id} to Deleted Items failed: ${move.status} ${await move.text()}`);
   }
 }
 
@@ -366,16 +387,16 @@ export async function run() {
 
     resultEl.textContent = "Scanning Junk Email folder...";
     const messages = await getJunkMessages(token);
-    const toDelete = messages.filter((m) => shouldDelete(m, badWords));
+    const toMove = messages.filter((m) => shouldDelete(m, badWords));
 
-    let deleteCount = 0;
-    for (const message of toDelete) {
-      resultEl.textContent = `Deleting ${deleteCount + 1} of ${toDelete.length}...`;
-      await deleteMessage(token, message.id);
-      deleteCount++;
+    let movedCount = 0;
+    for (const message of toMove) {
+      resultEl.textContent = `Moving ${movedCount + 1} of ${toMove.length} to Deleted Items...`;
+      await moveToDeletedItems(token, message.id);
+      movedCount++;
     }
 
-    resultEl.textContent = `Scanned: ${messages.length} messages. Matched: ${toDelete.length}. Deleted: ${deleteCount}.`;
+    resultEl.textContent = `Scanned: ${messages.length} messages. Matched: ${toMove.length}. Moved to Deleted Items: ${movedCount}.`;
   } catch (error) {
     resultEl.textContent = `Error: ${error.message}`;
   }

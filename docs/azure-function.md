@@ -1,6 +1,6 @@
 # Azure Function
 
-A timer-triggered Azure Function that deletes unwanted mail from the **Junk Email** folder on a
+A timer-triggered Azure Function that moves unwanted mail out of the **Junk Email** folder on a
 schedule, with no user interaction. It's the unattended counterpart to the
 [Outlook plugin](./outlook-plugin.md).
 
@@ -32,15 +32,15 @@ app.timer("dailyCleanup", { schedule: "0 0 */12 * * *", ... })
 
 That NCRONTAB expression is **every 12 hours** (six fields — seconds first — so `0 0 */12 * * *` is
 "second 0, minute 0, every 12th hour"). Despite the function's name it is not daily. The handler logs
-`Scanned / Matched (flagged) / Deleted` counts and rethrows on failure so the invocation is recorded
+`Scanned / Matched (flagged) / Moved to Deleted Items` counts and rethrows on failure so the invocation is recorded
 as failed.
 
 All real work is in [`graphClient.js`](../az-function/graphClient.js) via `runCleanup()`, which
-returns `{ scanned, matched, flagged, deleted }`.
+returns `{ scanned, matched, flagged, moved }`.
 
 ## Deletion rules
 
-Identical to the add-in's — a junk message is deleted if **either** matches:
+Identical to the add-in's — a junk message is moved to Deleted Items if **either** matches:
 
 1. **Sender matches an entry in `junk-senders.json`**, tested against
    `"<sender display name> <sender address>"`. Plain entries are case-insensitive substring matches;
@@ -52,13 +52,16 @@ See `senderMatches`, `isFlagged`, and `shouldDelete` in `graphClient.js`. Keep t
 add-in's copies in [`taskpane.js`](../outlook-plugin/src/taskpane/taskpane.js) — the *list* is shared
 via the blob, but the matching *logic* is duplicated in both codebases, not shared.
 
-> **Careful:** flagging junk mail marks it for deletion rather than preservation. Move a false
+> **Careful:** flagging junk mail marks it for removal rather than preservation. Move a false
 > positive out of the Junk folder instead of flagging it.
 
 Messages are read from `/me/mailFolders/junkemail/messages` with
 `$select=id,subject,from,flag&$top=100`, paging through `@odata.nextLink` until the folder is
-exhausted. `flag` must stay in `$select` or every message looks unflagged. Deletion is
-`DELETE /me/messages/{id}`, treating `404` as success.
+exhausted. `flag` must stay in `$select` or every message looks unflagged.
+
+Removal is two calls per message: `PATCH /me/messages/{id}` with `{ "isRead": true }`, then
+`POST /me/messages/{id}/move` with `{ "destinationId": "deleteditems" }`. The move must come second
+because it returns the message under a new id. `404` counts as success on both.
 
 ## Authentication
 
@@ -170,8 +173,8 @@ curl -X POST "https://$HOST/admin/functions/dailyCleanup?code=$MASTER_KEY" \
   -H "Content-Type: application/json" -d '{"input": ""}'
 ```
 
-This deletes mail immediately — there is no preview mode on the function side. To see what would
-match without deleting anything, use **Preview** in the add-in.
+This moves mail immediately — there is no preview mode on the function side. To see what would match
+without touching anything, use **Preview** in the add-in.
 
 ## Logs
 

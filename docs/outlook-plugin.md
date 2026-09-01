@@ -1,7 +1,7 @@
 # Outlook Plugin
 
-An Office.js mail add-in that scans the **Junk Email** folder and deletes messages you don't want,
-either on demand (Preview / Run Cleanup) from a task pane.
+An Office.js mail add-in that scans the **Junk Email** folder and moves unwanted messages to Deleted
+Items, on demand (Preview / Run Cleanup) from a task pane.
 
 Source lives in [`outlook-plugin/`](../outlook-plugin).
 
@@ -13,14 +13,15 @@ The add-in shows a task pane with an editable bad-word list and these buttons:
 | --- | --- |
 | **Sign in** | Signs in and loads the list. Only shown when there's no cached account. |
 | **Save List** | Writes the list back to the shared blob. |
-| **Preview** | Scans Junk Email and lists what *would* be deleted, with the reason for each match. Deletes nothing. |
-| **Run Cleanup** | Scans Junk Email and permanently deletes every matching message. |
+| **Preview** | Scans Junk Email and lists what *would* be moved, with the reason for each match. Changes nothing. |
+| **Run Cleanup** | Scans Junk Email and moves every matching message to Deleted Items, marking it read. |
 
-Always use **Preview** first after editing the list — deletion is not undoable through the add-in.
+Use **Preview** first after editing the list. Matches are moved to Deleted Items rather than purged, so
+a false positive is recoverable from there until that folder is emptied.
 
 ## Deletion rules
 
-A junk message is deleted if **either** rule matches:
+A junk message is moved to Deleted Items if **either** rule matches:
 
 1. **Sender matches the bad-word list** — each entry is tested against the string
    `"<sender display name> <sender address>"`.
@@ -31,13 +32,13 @@ A junk message is deleted if **either** rule matches:
 2. **The message carries an active follow-up flag** — i.e. Graph reports
    `flag.flagStatus === "flagged"`.
 
-Rule 2 lets you flag junk by hand in Outlook and have the next run delete it, without adding a
+Rule 2 lets you flag junk by hand in Outlook and have the next run move it, without adding a
 pattern to the list. Only an *active* flag counts; `complete` (a flag you've already ticked off) and
 `notFlagged` are ignored.
 
 > **Careful:** a follow-up flag conventionally means "keep this, follow up on it". Here it means the
 > opposite. Do not use flags to rescue a false positive sitting in Junk — flagging it marks it for
-> deletion. Move it out of the Junk folder instead.
+> removal. Move it out of the Junk folder instead.
 
 Because a flagged message matches regardless of who sent it, matches may have no sender at all; the
 preview renders those as `(no sender)`.
@@ -49,7 +50,7 @@ Relevant code in [`src/taskpane/taskpane.js`](../outlook-plugin/src/taskpane/tas
 
 The list is stored as `junk-senders.json` in Blob Storage — the same blob the Azure Function reads.
 It is the single source of truth: editing it in the task pane changes what the scheduled cleanup does,
-and **Preview** shows exactly what the scheduled cleanup would delete. See
+and **Preview** shows exactly what the scheduled cleanup would move. See
 [azure-function.md](./azure-function.md) for the blob's location and format.
 
 The add-in reads the blob over the Blob REST API with plain `fetch` (no `@azure/storage-blob`, to keep
@@ -102,7 +103,7 @@ is called twice with different scopes:
 
 | Resource | Scopes | Used for |
 | --- | --- | --- |
-| Microsoft Graph | `Mail.ReadWrite`, `User.Read` | reading and deleting junk mail |
+| Microsoft Graph | `Mail.ReadWrite`, `User.Read` | reading, marking read, and moving junk mail |
 | Azure Storage | `https://storage.azure.com/user_impersonation` | reading and writing the list blob |
 
 The two use **different authorities**, which matters:
