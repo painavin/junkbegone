@@ -2,179 +2,207 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Build (Development)",
-      "type": "npm",
-      "script": "build:dev",
-      "path": "outlook-plugin",
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
-      "presentation": {
-        "clear": true,
-        "panel": "shared",
-        "showReuseMessage": false
-      }
+        "label": "Build (Development)",
+        "type": "npm",
+        "script": "build:dev",
+        "path": "outlook-plugin",
+        "group": {
+            "kind": "build",
+            "isDefault": true
+        },
+        "presentation": {
+            "clear": true,
+            "panel": "shared",
+            "showReuseMessage": false
+        }
     },
     {
-      "label": "Build (Production)",
-      "type": "npm",
-      "script": "build",
-      "path": "outlook-plugin",
-      "group": "build",
-      "presentation": {
-        "clear": true,
-        "panel": "shared",
-        "showReuseMessage": false
-      }
+        "label": "Build (Production)",
+        "type": "npm",
+        "script": "build",
+        "path": "outlook-plugin",
+        "group": "build",
+        "presentation": {
+            "clear": true,
+            "panel": "shared",
+            "showReuseMessage": false
+        }
     },
     {
-      "label": "Debug: Excel Desktop",
-      "type": "shell",
-      "command": "npm",
-      "args": [
-        "run",
-        "start",
-        "--",
-        "desktop",
-        "--app",
-        "excel"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}/outlook-plugin"
-      },
-      "presentation": {
-        "clear": true,
-        "panel": "dedicated"
-      },
-      "problemMatcher": []
+        "label": "Debug: Excel Desktop",
+        "type": "shell",
+        "command": "npm",
+        "args": [
+            "run",
+            "start",
+            "--",
+            "desktop",
+            "--app",
+            "excel"
+        ],
+        "options": {
+            "cwd": "${workspaceFolder}/outlook-plugin"
+        },
+        "presentation": {
+            "clear": true,
+            "panel": "dedicated"
+        },
+        "problemMatcher": []
     },
     {
-      "label": "Debug: Outlook Desktop",
-      "type": "shell",
-      "command": "npm",
-      "args": [
-        "run",
-        "start",
-        "--",
-        "desktop",
-        "--app",
-        "outlook"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}/outlook-plugin"
-      },
-      "presentation": {
-        "clear": true,
-        "panel": "dedicated"
-      },
-      "problemMatcher": []
+        "label": "Debug: Outlook Desktop",
+        "type": "shell",
+        "command": "npm",
+        "args": [
+            "run",
+            "start",
+            "--",
+            "desktop",
+            "--app",
+            "outlook"
+        ],
+        "options": {
+            "cwd": "${workspaceFolder}/outlook-plugin"
+        },
+        "presentation": {
+            "clear": true,
+            "panel": "dedicated"
+        },
+        "problemMatcher": []
     },
     {
-      "label": "Debug: PowerPoint Desktop",
-      "type": "shell",
-      "command": "npm",
-      "args": [
-        "run",
-        "start",
-        "--",
-        "desktop",
-        "--app",
-        "powerpoint"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}/outlook-plugin"
-      },
-      "presentation": {
-        "clear": true,
-        "panel": "dedicated"
-      },
-      "problemMatcher": []
+        "label": "Debug: PowerPoint Desktop",
+        "type": "shell",
+        "command": "npm",
+        "args": [
+            "run",
+            "start",
+            "--",
+            "desktop",
+            "--app",
+            "powerpoint"
+        ],
+        "options": {
+            "cwd": "${workspaceFolder}/outlook-plugin"
+        },
+        "presentation": {
+            "clear": true,
+            "panel": "dedicated"
+        },
+        "problemMatcher": []
     },
     {
-      "label": "Debug: Word Desktop",
-      "type": "shell",
-      "command": "npm",
-      "args": [
-        "run",
-        "start",
-        "--",
-        "desktop",
-        "--app",
-        "word"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}/outlook-plugin"
-      },
-      "presentation": {
-        "clear": true,
-        "panel": "dedicated"
-      },
-      "problemMatcher": []
+        "label": "Debug: Word Desktop",
+        "type": "shell",
+        "command": "npm",
+        "args": [
+            "run",
+            "start",
+            "--",
+            "desktop",
+            "--app",
+            "word"
+        ],
+        "options": {
+            "cwd": "${workspaceFolder}/outlook-plugin"
+        },
+        "presentation": {
+            "clear": true,
+            "panel": "dedicated"
+        },
+        "problemMatcher": []
     },
     {
-      "label": "Dev Server",
-      "type": "npm",
-      "script": "dev-server",
-      "path": "outlook-plugin",
-      "presentation": {
-        "clear": true,
-        "panel": "dedicated"
-      },
-      "problemMatcher": []
+        "label": "Dev Server",
+        "type": "npm",
+        "script": "dev-server",
+        "path": "outlook-plugin",
+        "presentation": {
+            "clear": true,
+            "panel": "dedicated"
+        },
+        "problemMatcher": []
     },
     {
-      "label": "Install",
-      "type": "npm",
-      "script": "install",
-      "path": "outlook-plugin",
-      "presentation": {
-        "clear": true,
-        "panel": "shared",
-        "showReuseMessage": false
-      },
-      "problemMatcher": []
+        "label": "Install",
+        "type": "npm",
+        "script": "install",
+        "path": "outlook-plugin",
+        "presentation": {
+            "clear": true,
+            "panel": "shared",
+            "showReuseMessage": false
+        },
+        "problemMatcher": []
     },
     {
-      "label": "Lint: Check for problems",
-      "type": "npm",
-      "script": "lint",
-      "path": "outlook-plugin",
-      "problemMatcher": [
-        "$eslint-stylish"
-      ]
+        "label": "Lint: Check for problems",
+        "type": "npm",
+        "script": "lint",
+        "path": "outlook-plugin",
+        "problemMatcher": [
+            "$eslint-stylish"
+        ]
     },
     {
-      "label": "Lint: Fix all auto-fixable problems",
-      "type": "npm",
-      "script": "lint:fix",
-      "path": "outlook-plugin",
-      "problemMatcher": [
-        "$eslint-stylish"
-      ]
+        "label": "Lint: Fix all auto-fixable problems",
+        "type": "npm",
+        "script": "lint:fix",
+        "path": "outlook-plugin",
+        "problemMatcher": [
+            "$eslint-stylish"
+        ]
     },
     {
-      "label": "Stop Debug",
-      "type": "npm",
-      "script": "stop",
-      "path": "outlook-plugin",
-      "presentation": {
-        "clear": true,
-        "panel": "shared",
-        "showReuseMessage": false
-      },
-      "problemMatcher": []
+        "label": "Stop Debug",
+        "type": "npm",
+        "script": "stop",
+        "path": "outlook-plugin",
+        "presentation": {
+            "clear": true,
+            "panel": "shared",
+            "showReuseMessage": false
+        },
+        "problemMatcher": []
     },
     {
-      "label": "Watch",
-      "type": "npm",
-      "script": "watch",
-      "path": "outlook-plugin",
-      "presentation": {
-        "clear": true,
-        "panel": "dedicated"
-      },
-      "problemMatcher": []
+        "label": "Watch",
+        "type": "npm",
+        "script": "watch",
+        "path": "outlook-plugin",
+        "presentation": {
+            "clear": true,
+            "panel": "dedicated"
+        },
+        "problemMatcher": []
+    },
+    {
+        "type": "func",
+        "label": "func: host start",
+        "command": "host start",
+        "problemMatcher": "$func-node-watch",
+        "isBackground": true,
+        "dependsOn": "npm install (functions)",
+        "options": {
+            "cwd": "${workspaceFolder}/az-function"
+        }
+    },
+    {
+        "type": "shell",
+        "label": "npm install (functions)",
+        "command": "npm install",
+        "options": {
+            "cwd": "${workspaceFolder}/az-function"
+        }
+    },
+    {
+        "type": "shell",
+        "label": "npm prune (functions)",
+        "command": "npm prune --production",
+        "problemMatcher": [],
+        "options": {
+            "cwd": "${workspaceFolder}/az-function"
+        }
     }
-  ]
+]
 }

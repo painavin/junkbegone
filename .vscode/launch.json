@@ -2,25 +2,33 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Outlook Desktop (Edge Chromium)",
-      "type": "msedge",
-      "request": "attach",
-      "port": 9229,
-      "timeout": 600000,
-      "webRoot": "${workspaceRoot}/outlook-plugin",
-      "preLaunchTask": "Debug: Outlook Desktop",
-      "postDebugTask": "Stop Debug"
+        "name": "Outlook Desktop (Edge Chromium)",
+        "type": "msedge",
+        "request": "attach",
+        "port": 9229,
+        "timeout": 600000,
+        "webRoot": "${workspaceRoot}/outlook-plugin",
+        "preLaunchTask": "Debug: Outlook Desktop",
+        "postDebugTask": "Stop Debug"
     },
     {
-      "name": "Outlook Desktop (Edge Legacy)",
-      "type": "office-addin",
-      "request": "attach",
-      "url": "https://localhost:3000/taskpane.html?_host_Info=Outlook$Win32$16.01$en-US$$$$0",
-      "port": 9222,
-      "timeout": 600000,
-      "webRoot": "${workspaceRoot}/outlook-plugin",
-      "preLaunchTask": "Debug: Outlook Desktop",
-      "postDebugTask": "Stop Debug"
+        "name": "Outlook Desktop (Edge Legacy)",
+        "type": "office-addin",
+        "request": "attach",
+        "url": "https://localhost:3000/taskpane.html?_host_Info=Outlook$Win32$16.01$en-US$$$$0",
+        "port": 9222,
+        "timeout": 600000,
+        "webRoot": "${workspaceRoot}/outlook-plugin",
+        "preLaunchTask": "Debug: Outlook Desktop",
+        "postDebugTask": "Stop Debug"
+    },
+    {
+        "name": "Attach to Node Functions",
+        "type": "node",
+        "request": "attach",
+        "restart": true,
+        "port": 9229,
+        "preLaunchTask": "func: host start"
     }
-  ]
+]
 }
