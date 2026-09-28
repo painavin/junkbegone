@@ -21,7 +21,7 @@ a false positive is recoverable from there until that folder is emptied.
 
 ## Deletion rules
 
-A junk message is moved to Deleted Items if **either** rule matches:
+A junk message is moved to Deleted Items if **any** rule matches:
 
 1. **Sender matches the bad-word list** — each entry is tested against the string
    `"<sender display name> <sender address>"`.
@@ -31,6 +31,7 @@ A junk message is moved to Deleted Items if **either** rule matches:
      than throwing.
 2. **The message carries an active follow-up flag** — i.e. Graph reports
    `flag.flagStatus === "flagged"`.
+3. **No word of the display name appears in the address** — see below.
 
 Rule 2 lets you flag junk by hand in Outlook and have the next run move it, without adding a
 pattern to the list. Only an *active* flag counts; `complete` (a flag you've already ticked off) and
@@ -44,7 +45,41 @@ Because a flagged message matches regardless of who sent it, matches may have no
 preview renders those as `(no sender)`.
 
 Relevant code in [`src/taskpane/taskpane.js`](../outlook-plugin/src/taskpane/taskpane.js):
-`senderMatchesBadWord`, `isFlagged`, `shouldDelete`, `matchReason`.
+`senderMatchesBadWord`, `isFlagged`, `nameMismatchesAddress`, `shouldDelete`, `matchReason`.
+
+### Rule 3: name/address mismatch
+
+The display name is split into words and each is looked for in the address. If **not one** appears,
+the message matches. `Costco Deals <x7f2q@mailer-9.example>` matches; `Amazon <no-reply@amazon.com>`
+does not, because `amazon` is present in the address.
+
+Unlike rules 1 and 2, this one is a *heuristic* — it infers junk from the absence of a shared token
+rather than matching something you curated or flagged yourself. It is the most aggressive of the
+three, and it does move legitimate-looking mail:
+
+| Sender | Matches? | Why |
+| --- | --- | --- |
+| `Amazon <no-reply@amazon.com>` | no | `amazon` in address |
+| `Netflix <info@mailer.netflix.com>` | no | `netflix` in address |
+| `Dr. Smith's Office <appointments@healthsystem.com>` | **yes** | no shared word |
+| `The Daily Brief <hello@substack.com>` | **yes** | no shared word |
+| `My Bank <noreply@chase.com>` | **yes** | no shared word |
+
+Everything it sees is already in the Junk folder, which limits the damage, and matches land in
+Deleted Items rather than being purged. Still, **Preview** is the right way to see what it catches in
+your mailbox before trusting it.
+
+Three details that keep it from misbehaving:
+
+- **Words shorter than 3 characters are ignored** (`NAME_WORD_MIN_LENGTH`). Otherwise
+  `Bank of America <alerts@bofa.com>` "matches" because `bofa` contains `of` — a coincidence, not a
+  relationship.
+- **Senders with no usable display name never match.** No name means no words, which would make "no
+  word appears" vacuously true and sweep up every sender that omits a display name. A name identical
+  to the address counts as unusable for the same reason.
+- **Comparison is case- and accent-insensitive**, splitting on any non-alphanumeric character, and
+  searches the whole address including the domain. `María González <maria.gonzalez@example.com>`
+  therefore does not match.
 
 ## The bad-word list
 

@@ -7,7 +7,9 @@ app.timer("dailyCleanup", {
     try {
       const result = await runCleanup();
       context.log(
-        `Scanned: ${result.scanned}. Matched: ${result.matched} (flagged: ${result.flagged}). Moved to Deleted Items: ${result.moved}.`
+        `Scanned: ${result.scanned}. Matched: ${result.matched} ` +
+          `(flagged: ${result.flagged}, name/address mismatch: ${result.mismatched}). ` +
+          `Moved to Deleted Items: ${result.moved}.`
       );
     } catch (error) {
       context.error(`Cleanup failed: ${error.message}`);

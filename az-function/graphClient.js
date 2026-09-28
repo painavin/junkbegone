@@ -122,8 +122,45 @@ function isFlagged(message) {
   return !!message.flag && message.flag.flagStatus === "flagged";
 }
 
+// Words shorter than this match by accident: without it, "Bank of America"
+// <alerts@bofa.com> counts as a match because "bofa" contains "of".
+const NAME_WORD_MIN_LENGTH = 3;
+
+// Display name split into comparable words: lowercased, accents stripped, any
+// punctuation treated as a separator, and too-short tokens dropped.
+function nameWords(name) {
+  return name
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .split(/[^a-z0-9]+/)
+    .filter((word) => word.length >= NAME_WORD_MIN_LENGTH);
+}
+
+// True when not one word of the display name appears anywhere in the address —
+// "Costco Deals" <x7f2q@mailer-9.example>. Legitimate senders usually share at
+// least one token between the two; spoofed ones typically share none.
+//
+// Deliberately false when there is no usable display name: no name means no words,
+// and "no word appears" would then be vacuously true, matching every sender that
+// omits a display name.
+function nameMismatchesAddress(message) {
+  const from = message.from && message.from.emailAddress;
+  if (!from) return false;
+
+  const name = (from.name || "").trim();
+  const address = (from.address || "").toLowerCase();
+  if (!name || !address) return false;
+  if (name.toLowerCase() === address) return false;
+
+  const words = nameWords(name);
+  if (words.length === 0) return false;
+
+  return !words.some((word) => address.includes(word));
+}
+
 function shouldDelete(message, senders) {
-  return senderMatches(message, senders) || isFlagged(message);
+  return senderMatches(message, senders) || isFlagged(message) || nameMismatchesAddress(message);
 }
 
 // Mark read, then move to Deleted Items instead of deleting outright, so a false
@@ -167,6 +204,7 @@ async function runCleanup() {
   const messages = await getJunkMessages(token);
   const toMove = messages.filter((m) => shouldDelete(m, senders));
   const flagged = toMove.filter(isFlagged).length;
+  const mismatched = toMove.filter(nameMismatchesAddress).length;
 
   let movedCount = 0;
   for (const message of toMove) {
@@ -174,7 +212,13 @@ async function runCleanup() {
     movedCount++;
   }
 
-  return { scanned: messages.length, matched: toMove.length, flagged, moved: movedCount };
+  return {
+    scanned: messages.length,
+    matched: toMove.length,
+    flagged,
+    mismatched,
+    moved: movedCount,
+  };
 }
 
 module.exports = { createPca, getContainerClient, getConservativeSenders, runCleanup, CONTAINER_NAME, TOKEN_CACHE_BLOB, SENDERS_BLOB };

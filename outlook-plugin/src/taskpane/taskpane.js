@@ -300,14 +300,56 @@ function isFlagged(message) {
   return !!message.flag && message.flag.flagStatus === "flagged";
 }
 
+// Words shorter than this match by accident: without it, "Bank of America"
+// <alerts@bofa.com> counts as a match because "bofa" contains "of".
+const NAME_WORD_MIN_LENGTH = 3;
+
+// Display name split into comparable words: lowercased, accents stripped, any
+// punctuation treated as a separator, and too-short tokens dropped.
+function nameWords(name) {
+  return name
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .split(/[^a-z0-9]+/)
+    .filter((word) => word.length >= NAME_WORD_MIN_LENGTH);
+}
+
+// True when not one word of the display name appears anywhere in the address —
+// "Costco Deals" <x7f2q@mailer-9.example>. Legitimate senders usually share at
+// least one token between the two; spoofed ones typically share none.
+//
+// Deliberately false when there is no usable display name: no name means no words,
+// and "no word appears" would then be vacuously true, matching every sender that
+// omits a display name.
+function nameMismatchesAddress(message) {
+  const from = message.from && message.from.emailAddress;
+  if (!from) return false;
+
+  const name = (from.name || "").trim();
+  const address = (from.address || "").toLowerCase();
+  if (!name || !address) return false;
+  if (name.toLowerCase() === address) return false;
+
+  const words = nameWords(name);
+  if (words.length === 0) return false;
+
+  return !words.some((word) => address.includes(word));
+}
+
 function shouldDelete(message, badWords) {
-  return senderMatchesBadWord(message, badWords) || isFlagged(message);
+  return (
+    senderMatchesBadWord(message, badWords) ||
+    isFlagged(message) ||
+    nameMismatchesAddress(message)
+  );
 }
 
 function matchReason(message, badWords) {
   const reasons = [];
   if (senderMatchesBadWord(message, badWords)) reasons.push("bad word");
   if (isFlagged(message)) reasons.push("flagged");
+  if (nameMismatchesAddress(message)) reasons.push("name/address mismatch");
   return reasons.join(" + ");
 }
 

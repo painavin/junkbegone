@@ -32,25 +32,33 @@ app.timer("dailyCleanup", { schedule: "0 0 */12 * * *", ... })
 
 That NCRONTAB expression is **every 12 hours** (six fields — seconds first — so `0 0 */12 * * *` is
 "second 0, minute 0, every 12th hour"). Despite the function's name it is not daily. The handler logs
-`Scanned / Matched (flagged) / Moved to Deleted Items` counts and rethrows on failure so the invocation is recorded
+`Scanned / Matched (flagged, name/address mismatch) / Moved to Deleted Items` counts and rethrows on failure so the invocation is recorded
 as failed.
 
 All real work is in [`graphClient.js`](../az-function/graphClient.js) via `runCleanup()`, which
-returns `{ scanned, matched, flagged, moved }`.
+returns `{ scanned, matched, flagged, mismatched, moved }`.
 
 ## Deletion rules
 
-Identical to the add-in's — a junk message is moved to Deleted Items if **either** matches:
+Identical to the add-in's — a junk message is moved to Deleted Items if **any** matches:
 
 1. **Sender matches an entry in `junk-senders.json`**, tested against
    `"<sender display name> <sender address>"`. Plain entries are case-insensitive substring matches;
    `/pattern/flags` entries are compiled as regexes, falling back to substring matching if malformed.
 2. **The message carries an active follow-up flag** (`flag.flagStatus === "flagged"`). `complete` and
    `notFlagged` are ignored.
+3. **No word of the display name appears in the address** — a heuristic, and the most aggressive of
+   the three. Words under 3 characters are ignored, and senders with no usable display name never
+   match. See [outlook-plugin.md](./outlook-plugin.md#rule-3-nameaddress-mismatch) for the reasoning
+   and the false-positive profile.
 
-See `senderMatches`, `isFlagged`, and `shouldDelete` in `graphClient.js`. Keep these in sync with the
-add-in's copies in [`taskpane.js`](../outlook-plugin/src/taskpane/taskpane.js) — the *list* is shared
-via the blob, but the matching *logic* is duplicated in both codebases, not shared.
+See `senderMatches`, `isFlagged`, `nameMismatchesAddress`, and `shouldDelete` in `graphClient.js`.
+Keep these in sync with the add-in's copies in
+[`taskpane.js`](../outlook-plugin/src/taskpane/taskpane.js) — the *list* is shared via the blob, but
+the matching *logic* is duplicated in both codebases, not shared.
+
+Rule 3 runs unattended here with no preview, so use **Preview** in the add-in to see what it catches
+in your mailbox before publishing a change to it.
 
 > **Careful:** flagging junk mail marks it for removal rather than preservation. Move a false
 > positive out of the Junk folder instead of flagging it.
