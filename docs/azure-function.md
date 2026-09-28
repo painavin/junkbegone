@@ -32,11 +32,17 @@ app.timer("dailyCleanup", { schedule: "0 0 */12 * * *", ... })
 
 That NCRONTAB expression is **every 12 hours** (six fields — seconds first — so `0 0 */12 * * *` is
 "second 0, minute 0, every 12th hour"). Despite the function's name it is not daily. The handler logs
-`Scanned / Matched (flagged, name/address mismatch) / Moved to Deleted Items` counts and rethrows on failure so the invocation is recorded
+`Scanned / Matched (flagged, name/address mismatch) / Moved to Deleted Items / Permanently deleted
+(emoji) / Flags cleared` counts and rethrows on failure so the invocation is recorded
 as failed.
 
 All real work is in [`graphClient.js`](../az-function/graphClient.js) via `runCleanup()`, which
-returns `{ scanned, matched, flagged, mismatched, moved }`.
+returns `{ scanned, matched, flagged, mismatched, moved, deleted, flagsCleared }`.
+
+`flagged` and `flagsCleared` measure different things. `flagged` counts matches that had an active
+flag, before anything is moved. `flagsCleared` counts flags actually removed: every moved message
+has its flag cleared, so this also includes `complete` flags, and it excludes messages whose `PATCH`
+returned `404`.
 
 ## Deletion rules
 
@@ -57,6 +63,10 @@ Keep these in sync with the add-in's copies in
 [`taskpane.js`](../outlook-plugin/src/taskpane/taskpane.js) — the *list* is shared via the blob, but
 the matching *logic* is duplicated in both codebases, not shared.
 
+A matched message with an emoji in its subject or sender name is **permanently deleted** instead of
+moved — see [outlook-plugin.md](./outlook-plugin.md#emoji-permanent-delete-instead-of-deleted-items).
+That runs unattended here too, and cannot be undone.
+
 Rule 3 runs unattended here with no preview, so use **Preview** in the add-in to see what it catches
 in your mailbox before publishing a change to it.
 
@@ -67,9 +77,12 @@ Messages are read from `/me/mailFolders/junkemail/messages` with
 `$select=id,subject,from,flag&$top=100`, paging through `@odata.nextLink` until the folder is
 exhausted. `flag` must stay in `$select` or every message looks unflagged.
 
-Removal is two calls per message: `PATCH /me/messages/{id}` with `{ "isRead": true }`, then
+Removal is two calls per message: `PATCH /me/messages/{id}` with
+`{ "isRead": true, "flag": { "flagStatus": "notFlagged" } }`, then
 `POST /me/messages/{id}/move` with `{ "destinationId": "deleteditems" }`. The move must come second
-because it returns the message under a new id. `404` counts as success on both.
+because it returns the message under a new id. `404` counts as success on both. Emoji matches instead get a single
+`POST /me/messages/{id}/permanentDelete`, with no mark-read or flag clear first, since the message
+is gone. Those are not counted in `flagsCleared`.
 
 ## Authentication
 

@@ -9,7 +9,8 @@ app.timer("dailyCleanup", {
       context.log(
         `Scanned: ${result.scanned}. Matched: ${result.matched} ` +
           `(flagged: ${result.flagged}, name/address mismatch: ${result.mismatched}). ` +
-          `Moved to Deleted Items: ${result.moved}.`
+          `Moved to Deleted Items: ${result.moved}. Permanently deleted (emoji): ${result.deleted}. ` +
+          `Flags cleared: ${result.flagsCleared}.`
       );
     } catch (error) {
       context.error(`Cleanup failed: ${error.message}`);

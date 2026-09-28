@@ -14,7 +14,7 @@ The add-in shows a task pane with an editable bad-word list and these buttons:
 | **Sign in** | Signs in and loads the list. Only shown when there's no cached account. |
 | **Save List** | Writes the list back to the shared blob. |
 | **Preview** | Scans Junk Email and lists what *would* be moved, with the reason for each match. Changes nothing. |
-| **Run Cleanup** | Scans Junk Email and moves every matching message to Deleted Items, marking it read. |
+| **Run Cleanup** | Scans Junk Email and moves every matching message to Deleted Items, marking it read and clearing its flag — or permanently deletes it if it contains an emoji. |
 
 Use **Preview** first after editing the list. Matches are moved to Deleted Items rather than purged, so
 a false positive is recoverable from there until that folder is emptied.
@@ -80,6 +80,23 @@ Three details that keep it from misbehaving:
 - **Comparison is case- and accent-insensitive**, splitting on any non-alphanumeric character, and
   searches the whole address including the domain. `María González <maria.gonzalez@example.com>`
   therefore does not match.
+
+
+### Emoji: permanent delete instead of Deleted Items
+
+A message that matches **any** rule above and has an emoji in its **subject or sender display name**
+is permanently deleted (`POST /me/messages/{id}/permanentDelete`) instead of being moved. It skips
+Deleted Items, so **this cannot be undone from Outlook**. An emoji alone never removes a message:
+it only changes how an already-matched message is removed. **Preview** marks these lines
+`PERMANENT DELETE`.
+
+"Emoji" means `\p{Emoji_Presentation}` (💛 🏆 💡), plus pictographic symbols explicitly followed by
+the emoji variation selector `U+FE0F` (❤️). The broader `\p{Extended_Pictographic}` class is
+deliberately not used: it includes `™ © ®`, which legitimate senders use all the time. Accented
+letters, curly quotes, dashes and non-Latin scripts never count.
+
+A plain Graph `DELETE` would not work here: it moves the message to Deleted Items, the same as the
+normal path.
 
 ## The bad-word list
 

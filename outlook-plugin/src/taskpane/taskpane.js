@@ -360,9 +360,38 @@ function describeSender(message) {
   return `${from.name || ""} <${from.address || ""}>`;
 }
 
-// Mark read, then move to Deleted Items instead of deleting outright, so a false
-// positive stays recoverable. The move has to come second: it returns the message
-// under a new id, which would make a subsequent PATCH target a stale one.
+// Characters rendered as emoji by default (💛 🏆 💡), plus text symbols explicitly
+// asked to render as emoji via VS16 (❤️). Plain Extended_Pictographic is too broad:
+// it includes ™ © ®, which legitimate senders use routinely.
+const EMOJI = /\p{Emoji_Presentation}|\p{Extended_Pictographic}\uFE0F/u;
+
+// Only consulted for messages that already matched a rule: an emoji in the subject or
+// sender name upgrades the removal from Deleted Items to a permanent delete.
+function hasEmoji(message) {
+  const from = message.from && message.from.emailAddress;
+  return EMOJI.test(message.subject || "") || EMOJI.test((from && from.name) || "");
+}
+
+// Skips Deleted Items entirely, so this cannot be undone from Outlook. A plain DELETE
+// would not do: Graph treats it as a move to Deleted Items. 404 is tolerated for the
+// same reason as in moveToDeletedItems().
+async function permanentlyDelete(token, id) {
+  const response = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${id}/permanentDelete`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok && response.status !== 404) {
+    throw new Error(`Permanently deleting ${id} failed: ${response.status} ${await response.text()}`);
+  }
+}
+
+// Mark read and clear the follow-up flag, then move to Deleted Items instead of
+// deleting outright, so a false positive stays recoverable. Here a flag means "delete
+// me" (rule 2), so once acted on it is stale; left set, a restored message would
+// show up as a follow-up task, and be moved again if it went back into Junk.
+//
+// The move has to come second: it returns the message under a new id, which would
+// make a subsequent PATCH target a stale one.
 //
 // 404 is tolerated on both calls — the message already being gone is the desired
 // end state.
@@ -375,10 +404,10 @@ async function moveToDeletedItems(token, id) {
   const markRead = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${id}`, {
     method: "PATCH",
     headers,
-    body: JSON.stringify({ isRead: true }),
+    body: JSON.stringify({ isRead: true, flag: { flagStatus: "notFlagged" } }),
   });
   if (!markRead.ok && markRead.status !== 404) {
-    throw new Error(`Marking ${id} read failed: ${markRead.status} ${await markRead.text()}`);
+    throw new Error(`Marking ${id} read and unflagged failed: ${markRead.status} ${await markRead.text()}`);
   }
 
   const move = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${id}/move`, {
@@ -406,10 +435,17 @@ export async function preview() {
     resultEl.textContent = "Scanning Junk Email folder...";
     const messages = await getJunkMessages(token);
     const matched = messages.filter((m) => shouldDelete(m, badWords));
+    const toDeleteCount = matched.filter(hasEmoji).length;
 
-    const lines = matched.map((m) => `  [${matchReason(m, badWords)}] ${describeSender(m)} — ${m.subject}`);
+    const lines = matched.map(
+      (m) =>
+        `  [${matchReason(m, badWords)}]${hasEmoji(m) ? " PERMANENT DELETE" : ""} ` +
+        `${describeSender(m)} — ${m.subject}`
+    );
     resultEl.textContent =
-      `Scanned: ${messages.length} messages. Would match: ${matched.length}.\n` + lines.join("\n");
+      `Scanned: ${messages.length} messages. Would match: ${matched.length} ` +
+      `(${matched.length - toDeleteCount} to Deleted Items, ${toDeleteCount} permanently deleted).\n` +
+      lines.join("\n");
   } catch (error) {
     resultEl.textContent = `Error: ${error.message}`;
   }
@@ -432,13 +468,21 @@ export async function run() {
     const toMove = messages.filter((m) => shouldDelete(m, badWords));
 
     let movedCount = 0;
+    let deletedCount = 0;
     for (const message of toMove) {
-      resultEl.textContent = `Moving ${movedCount + 1} of ${toMove.length} to Deleted Items...`;
-      await moveToDeletedItems(token, message.id);
-      movedCount++;
+      resultEl.textContent = `Processing ${movedCount + deletedCount + 1} of ${toMove.length}...`;
+      if (hasEmoji(message)) {
+        await permanentlyDelete(token, message.id);
+        deletedCount++;
+      } else {
+        await moveToDeletedItems(token, message.id);
+        movedCount++;
+      }
     }
 
-    resultEl.textContent = `Scanned: ${messages.length} messages. Matched: ${toMove.length}. Moved to Deleted Items: ${movedCount}.`;
+    resultEl.textContent =
+      `Scanned: ${messages.length} messages. Matched: ${toMove.length}. ` +
+      `Moved to Deleted Items: ${movedCount}. Permanently deleted (emoji): ${deletedCount}.`;
   } catch (error) {
     resultEl.textContent = `Error: ${error.message}`;
   }
